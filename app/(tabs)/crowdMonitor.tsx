@@ -8,10 +8,10 @@ import {
   Animated,
 } from 'react-native';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
-import { Stack } from 'expo-router';
+import { Stack, useLocalSearchParams } from 'expo-router';
 import CrowdIndicator from '../../components/CrowdIndicator';
 import { CrowdLineChart, CrowdBarChart } from '../../components/CrowdChart';
-import { CrowdData, HourlyTrendData, DailyComparisonData } from '../../types/crowd';
+import { HourlyTrendData, DailyComparisonData } from '../../types/crowd';
 
 // 爽やかな青のカラーパレット
 const COLORS = {
@@ -28,12 +28,125 @@ const COLORS = {
   tabInactive: '#ffffff',
 };
 
-export default function CrowdMonitorScreen() {
-  const [activeTab, setActiveTab] = useState('overview');
-  
-  // アニメーション用のState
-  const [fadeAnim] = useState(new Animated.Value(1));
+// イベントデータマッピング
+const eventDataMap = {
+  '1': { // シーバンス夏祭り
+    date: '7/26(金)',
+    weather: {
+      icon: 'sunny',
+      temp: '35/25°C',
+    },
+    event: {
+      time: '17:00〜21:00',
+      name: 'シーバンス夏祭り',
+      number: 1,
+    },
+    crowdness: {
+      percentage: '125%',
+      label: '平常比',
+    },
+    hourlyPrediction: [
+      { hour: '16時', crowd: [true, false, false, false], value: 25 },
+      { hour: '17時', crowd: [true, true, false, false], value: 50 },
+      { hour: '18時', crowd: [true, true, true, false], value: 75 },
+      { hour: '19時', crowd: [true, true, true, true], value: 100 },
+      { hour: '20時', crowd: [true, true, true, false], value: 75 },
+    ],
+    restaurantAdvice: 'シフトを増やして対応！',
+    customerAdvice: '18時以降は混雑します',
+    storeName: 'シーバンス周辺店舗',
+  },
+  '2': { // 地蔵尊盆踊り大会
+    date: '7/26(金)',
+    weather: {
+      icon: 'sunny',
+      temp: '35/25°C',
+    },
+    event: {
+      time: '17:00〜20:00',
+      name: '地蔵尊盆踊り大会',
+      number: 1,
+    },
+    crowdness: {
+      percentage: '140%',
+      label: '平常比',
+    },
+    hourlyPrediction: [
+      { hour: '16時', crowd: [true, false, false, false], value: 25 },
+      { hour: '17時', crowd: [true, true, false, false], value: 50 },
+      { hour: '18時', crowd: [true, true, true, true], value: 100 },
+      { hour: '19時', crowd: [true, true, true, false], value: 75 },
+      { hour: '20時', crowd: [true, false, false, false], value: 25 },
+    ],
+    restaurantAdvice: '18時台に準備を！',
+    customerAdvice: '19時以降がおすすめ',
+    storeName: '増上寺周辺店舗',
+  },
+  '3': { // Hi-NODE
+    date: '8/2(金)',
+    weather: {
+      icon: 'partly-sunny',
+      temp: '32/24°C',
+    },
+    event: {
+      time: '終日',
+      name: 'Hi-NODE BLUE SUMMER FES',
+      number: 1,
+    },
+    crowdness: {
+      percentage: '180%',
+      label: '平常比',
+    },
+    hourlyPrediction: [
+      { hour: '10時', crowd: [true, false, false, false], value: 25 },
+      { hour: '12時', crowd: [true, true, false, false], value: 50 },
+      { hour: '14時', crowd: [true, true, true, false], value: 75 },
+      { hour: '16時', crowd: [true, true, true, true], value: 100 },
+      { hour: '18時', crowd: [true, true, true, false], value: 75 },
+    ],
+    restaurantAdvice: '終日の混雑に備えて！',
+    customerAdvice: '10時台が比較的空いています',
+    storeName: 'Hi-NODE周辺店舗',
+  }
+};
 
+export default function CrowdMonitorScreen() {
+  const params = useLocalSearchParams();
+  const { eventId, eventTitle } = params;
+  
+  const [activeTab, setActiveTab] = useState('overview');
+  const [fadeAnim] = useState(new Animated.Value(1));
+  
+  // イベントIDからデータを取得
+  const eventData = eventId && eventDataMap[eventId as string] 
+    ? eventDataMap[eventId as string] 
+    : {
+        date: '7/19(金)',
+        weather: {
+          icon: 'sunny',
+          temp: '35/25°C',
+        },
+        event: {
+          time: '終日',
+          name: eventTitle as string || 'イベント',
+          number: 1,
+        },
+        crowdness: {
+          percentage: '150%',
+          label: '平常比',
+        },
+        hourlyPrediction: [
+          { hour: '16時', crowd: [true, false, false, false], value: 25 },
+          { hour: '17時', crowd: [true, true, false, false], value: 50 },
+          { hour: '18時', crowd: [true, true, true, false], value: 75 },
+          { hour: '19時', crowd: [true, true, true, true], value: 100 },
+          { hour: '20時', crowd: [true, true, false, false], value: 50 },
+        ],
+        restaurantAdvice: 'シフトの調整をおすすめします',
+        customerAdvice: '17時台がおすすめです',
+        storeName: '周辺店舗',
+      };
+  
   // タブ切り替え時のアニメーション
   const changeTab = (tab: string) => {
     Animated.sequence([
@@ -52,53 +165,25 @@ export default function CrowdMonitorScreen() {
     setActiveTab(tab);
   };
 
-  // サンプルデータ
-  const data: CrowdData = {
-    date: '6/13(火)',
-    weather: {
-      icon: 'umbrella',
-      temp: '20/13°C',
-    },
-    event: {
-      time: '17〜19時',
-      name: 'B\'z',
-      number: 1,
-    },
-    crowdness: {
-      percentage: '140%',
-      label: '前日比',
-    },
-    hourlyPrediction: [
-      { hour: '16時', crowd: [true, false, false, false], value: 25 },
-      { hour: '17時', crowd: [false, false, false, false], value: 10 },
-      { hour: '18時', crowd: [false, false, false, false], value: 15 },
-      { hour: '19時', crowd: [true, true, false, false], value: 50 },
-      { hour: '20時', crowd: [true, true, true, true], value: 100 },
-    ],
-    restaurantAdvice: 'シフトを減らして！',
-    customerAdvice: '夜ご飯は18時台に！',
-    storeName: '焼肉XX屋',
-  };
-
   // 時間推移グラフのデータ
   const hourlyTrendData: HourlyTrendData[] = [
     { hour: '15時', average: 20, predicted: 15 },
     { hour: '16時', average: 25, predicted: 25 },
-    { hour: '17時', average: 15, predicted: 10 },
-    { hour: '18時', average: 20, predicted: 15 },
-    { hour: '19時', average: 45, predicted: 50 },
-    { hour: '20時', average: 80, predicted: 100 },
-    { hour: '21時', average: 60, predicted: 75 },
-    { hour: '22時', average: 40, predicted: 35 },
+    { hour: '17時', average: 15, predicted: 50 },
+    { hour: '18時', average: 20, predicted: 75 },
+    { hour: '19時', average: 45, predicted: 100 },
+    { hour: '20時', average: 80, predicted: 50 },
+    { hour: '21時', average: 60, predicted: 30 },
+    { hour: '22時', average: 40, predicted: 20 },
   ];
 
   // 日別比較グラフのデータ
   const dailyComparisonData: DailyComparisonData[] = [
-    { name: '17時', today: 10, yesterday: 15, lastWeek: 25 },
-    { name: '18時', today: 15, yesterday: 20, lastWeek: 30 },
-    { name: '19時', today: 50, yesterday: 35, lastWeek: 45 },
-    { name: '20時', today: 100, yesterday: 70, lastWeek: 80 },
-    { name: '21時', today: 75, yesterday: 55, lastWeek: 60 },
+    { name: '17時', today: 50, yesterday: 15, lastWeek: 25 },
+    { name: '18時', today: 75, yesterday: 20, lastWeek: 30 },
+    { name: '19時', today: 100, yesterday: 35, lastWeek: 45 },
+    { name: '20時', today: 50, yesterday: 70, lastWeek: 80 },
+    { name: '21時', today: 30, yesterday: 55, lastWeek: 60 },
   ];
 
   return (
@@ -121,15 +206,15 @@ export default function CrowdMonitorScreen() {
         {/* 日付と天気 */}
         <View style={styles.dateWeatherContainer}>
           <View style={styles.dateContainer}>
-            <Text style={styles.dateText}>{data.date}</Text>
+            <Text style={styles.dateText}>{eventData.date}</Text>
             <View style={styles.eventTag}>
               <FontAwesome5 name="calendar-alt" size={12} color="#ffffff" style={styles.eventIcon} />
-              <Text style={styles.eventText}>{data.event.name}</Text>
+              <Text style={styles.eventText}>{eventData.event.name}</Text>
             </View>
           </View>
           <View style={styles.weatherContainer}>
-            <Ionicons name={data.weather.icon as any} size={28} color="#ffffff" />
-            <Text style={styles.tempText}>{data.weather.temp}</Text>
+            <Ionicons name={eventData.weather.icon as any} size={28} color="#ffffff" />
+            <Text style={styles.tempText}>{eventData.weather.temp}</Text>
           </View>
         </View>
 
@@ -138,37 +223,37 @@ export default function CrowdMonitorScreen() {
           <TouchableOpacity 
             style={[
               styles.tab, 
-              activeTab === 'overview' ? [styles.activeTab] : {}
+              activeTab === 'overview' ? styles.activeTab : null
             ]} 
             onPress={() => changeTab('overview')}
           >
             <Text style={[
               styles.tabText, 
-              activeTab === 'overview' ? styles.activeTabText : {}
+              activeTab === 'overview' ? styles.activeTabText : null
             ]}>概要</Text>
           </TouchableOpacity>
           <TouchableOpacity 
             style={[
               styles.tab, 
-              activeTab === 'trends' ? [styles.activeTab] : {}
+              activeTab === 'trends' ? styles.activeTab : null
             ]} 
             onPress={() => changeTab('trends')}
           >
             <Text style={[
               styles.tabText, 
-              activeTab === 'trends' ? styles.activeTabText : {}
+              activeTab === 'trends' ? styles.activeTabText : null
             ]}>トレンド</Text>
           </TouchableOpacity>
           <TouchableOpacity 
             style={[
               styles.tab, 
-              activeTab === 'comparison' ? [styles.activeTab] : {}
+              activeTab === 'comparison' ? styles.activeTab : null
             ]} 
             onPress={() => changeTab('comparison')}
           >
             <Text style={[
               styles.tabText, 
-              activeTab === 'comparison' ? styles.activeTabText : {}
+              activeTab === 'comparison' ? styles.activeTabText : null
             ]}>比較</Text>
           </TouchableOpacity>
         </View>
@@ -185,16 +270,16 @@ export default function CrowdMonitorScreen() {
                   <View style={styles.cardHeader}>
                     <Text style={styles.cardTitle}>混雑予報</Text>
                     <View style={styles.percentageContainer}>
-                      <Text style={styles.percentageLabel}>{data.crowdness.label}</Text>
-                      <Text style={styles.percentageValue}>{data.crowdness.percentage}</Text>
+                      <Text style={styles.percentageLabel}>{eventData.crowdness.label}</Text>
+                      <Text style={styles.percentageValue}>{eventData.crowdness.percentage}</Text>
                     </View>
                   </View>
 
-                  <Text style={styles.sectionTitle}>{data.storeName}の来訪予測</Text>
+                  <Text style={styles.sectionTitle}>{eventData.storeName}の来訪予測</Text>
 
                   {/* 時間別予測 */}
                   <View style={styles.tableContainer}>
-                    {data.hourlyPrediction.map((hourData, index) => (
+                    {eventData.hourlyPrediction.map((hourData, index) => (
                       <View key={index} style={styles.tableRow}>
                         <View style={styles.tableCell}>
                           <Text style={styles.hourText}>{hourData.hour}</Text>
@@ -211,8 +296,8 @@ export default function CrowdMonitorScreen() {
                     <View style={styles.adviceCard}>
                       <FontAwesome5 name="store" size={18} color={COLORS.primary} style={styles.adviceIcon} />
                       <View style={styles.adviceContent}>
-                        <Text style={styles.adviceTitle}>{data.storeName}へのアドバイス</Text>
-                        <Text style={styles.adviceText}>{data.restaurantAdvice}</Text>
+                        <Text style={styles.adviceTitle}>{eventData.storeName}へのアドバイス</Text>
+                        <Text style={styles.adviceText}>{eventData.restaurantAdvice}</Text>
                       </View>
                     </View>
 
@@ -220,7 +305,7 @@ export default function CrowdMonitorScreen() {
                       <FontAwesome5 name="user-friends" size={18} color={COLORS.primary} style={styles.adviceIcon} />
                       <View style={styles.adviceContent}>
                         <Text style={styles.adviceTitle}>お客さんへのアドバイス</Text>
-                        <Text style={styles.adviceText}>{data.customerAdvice}</Text>
+                        <Text style={styles.adviceText}>{eventData.customerAdvice}</Text>
                       </View>
                     </View>
                   </View>
@@ -246,7 +331,7 @@ export default function CrowdMonitorScreen() {
                       </View>
                       <View style={styles.highlightContent}>
                         <Text style={styles.highlightLabel}>ピーク時間</Text>
-                        <Text style={styles.highlightValue}>20:00</Text>
+                        <Text style={styles.highlightValue}>19:00</Text>
                       </View>
                     </View>
                     
@@ -256,7 +341,7 @@ export default function CrowdMonitorScreen() {
                       </View>
                       <View style={styles.highlightContent}>
                         <Text style={styles.highlightLabel}>空いている時間</Text>
-                        <Text style={styles.highlightValue}>17:00</Text>
+                        <Text style={styles.highlightValue}>16:00</Text>
                       </View>
                     </View>
                   </View>
@@ -280,9 +365,9 @@ export default function CrowdMonitorScreen() {
                       <FontAwesome5 name="arrow-up" size={20} color="#f87171" />
                     </View>
                     <View style={styles.comparisonContent}>
-                      <Text style={styles.comparisonTitle}>昨日より混雑</Text>
+                      <Text style={styles.comparisonTitle}>通常より混雑</Text>
                       <Text style={styles.comparisonDescription}>
-                        昨日より40%混雑が増加しています。20時に最大の差があります。
+                        通常時より{parseInt(eventData.crowdness.percentage)}%混雑が増加しています。イベントの影響と考えられます。
                       </Text>
                     </View>
                   </View>
@@ -294,7 +379,7 @@ export default function CrowdMonitorScreen() {
                     <View style={styles.comparisonContent}>
                       <Text style={styles.comparisonTitle}>先週同日との比較</Text>
                       <Text style={styles.comparisonDescription}>
-                        先週の同じ曜日よりも25%混雑が増加しています。イベントの影響と考えられます。
+                        先週の同じ曜日よりも30%混雑が増加しています。{eventData.event.name}の影響と考えられます。
                       </Text>
                     </View>
                   </View>
