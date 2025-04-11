@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -7,10 +7,11 @@ import {
   ScrollView, 
   SafeAreaView,
   Linking,
-  Image
+  ActivityIndicator
 } from 'react-native';
 import { Stack } from 'expo-router';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
+import { disasterDataService } from '../../services/dataService';
 
 // 爽やかな青のカラーパレット
 const COLORS = {
@@ -31,16 +32,40 @@ const COLORS = {
 };
 
 export default function DisasterInfoScreen() {
+  const [loading, setLoading] = useState(true);
+  const [disasterData, setDisasterData] = useState(null);
+  
   const currentDate = new Date();
   const formattedTime = `${currentDate.getHours()}:${String(currentDate.getMinutes()).padStart(2, '0')}`;
   
+  // 防災情報データを取得
+  useEffect(() => {
+    async function fetchData() {
+      setLoading(true);
+      try {
+        const data = await disasterDataService.getDisasterData();
+        setDisasterData(data);
+      } catch (error) {
+        console.error('Error fetching disaster data:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    fetchData();
+  }, []);
+  
   // SNSリンクを開く
   const openTwitter = () => {
-    Linking.openURL('https://twitter.com/minato_city');
+    if (disasterData && disasterData.snsAccounts) {
+      Linking.openURL(disasterData.snsAccounts.twitter.url);
+    }
   };
   
   const openLine = () => {
-    Linking.openURL('https://line.me/ti/p/@minatocity');
+    if (disasterData && disasterData.snsAccounts) {
+      Linking.openURL(disasterData.snsAccounts.line.url);
+    }
   };
   
   // 現在地地図を開く
@@ -53,6 +78,16 @@ export default function DisasterInfoScreen() {
   const openEvacuationMap = () => {
     alert('避難所の地図を表示します');
   };
+
+  // ローディング中の表示
+  if (loading || !disasterData) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+        <Text style={styles.loadingText}>防災情報を読み込んでいます...</Text>
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -75,8 +110,8 @@ export default function DisasterInfoScreen() {
           <Text style={styles.headerTime}>{formattedTime}</Text>
         </View>
         <Text style={styles.emergencyNotice}>
-          住宅火災が消⽕！
-          <Text style={styles.subNotice}>（東京消防庁からのお知らせ）</Text>
+          {disasterData.emergencyNotice.message}
+          <Text style={styles.subNotice}>{disasterData.emergencyNotice.subNotice}</Text>
         </Text>
       </View>
       
@@ -87,12 +122,12 @@ export default function DisasterInfoScreen() {
           
           <View style={styles.infoItem}>
             <Text style={styles.infoLabel}>避難情報：</Text>
-            <Text style={styles.infoValue}>現在ありません</Text>
+            <Text style={styles.infoValue}>{disasterData.disasterInfo.evacuation}</Text>
           </View>
           
           <View style={styles.infoItem}>
             <Text style={styles.infoLabel}>避難所：</Text>
-            <Text style={styles.infoValue}>麻布図書館一時滞在施設</Text>
+            <Text style={styles.infoValue}>{disasterData.disasterInfo.shelterName}</Text>
           </View>
         </View>
         
@@ -119,17 +154,17 @@ export default function DisasterInfoScreen() {
         <View style={styles.weatherSection}>
           <View style={styles.weatherTitleRow}>
             <Text style={styles.weatherTitle}>港区気象情報：</Text>
-            <Text style={styles.weatherStatus}>あり</Text>
+            <Text style={styles.weatherStatus}>{disasterData.weatherInfo.status}</Text>
           </View>
           
           <View style={styles.warningContainer}>
             <Text style={styles.warningLabel}>【警報】</Text>
-            <Text style={styles.warningValue}>なし</Text>
+            <Text style={styles.warningValue}>{disasterData.weatherInfo.warnings}</Text>
           </View>
           
           <View style={styles.warningContainer}>
             <Text style={styles.warningLabel}>【注意報】</Text>
-            <Text style={styles.warningValue}>乾燥</Text>
+            <Text style={styles.warningValue}>{disasterData.weatherInfo.advisories}</Text>
           </View>
         </View>
         
@@ -142,8 +177,8 @@ export default function DisasterInfoScreen() {
               <FontAwesome5 name="twitter" size={36} color="#1DA1F2" />
             </View>
             <View style={styles.snsInfo}>
-              <Text style={styles.snsName}>港区防災情報</Text>
-              <Text style={styles.snsHandle}>@minato_city</Text>
+              <Text style={styles.snsName}>{disasterData.snsAccounts.twitter.name}</Text>
+              <Text style={styles.snsHandle}>{disasterData.snsAccounts.twitter.handle}</Text>
             </View>
           </View>
           
@@ -172,6 +207,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.background,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: COLORS.text,
   },
   headerContainer: {
     backgroundColor: '#f8f9fa',

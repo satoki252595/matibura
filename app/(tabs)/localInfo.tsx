@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -6,10 +6,12 @@ import {
   TouchableOpacity, 
   ScrollView, 
   SafeAreaView,
-  Linking
+  Linking,
+  ActivityIndicator
 } from 'react-native';
 import { Stack } from 'expo-router';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
+import { localInfoDataService, dateUtils } from '../../services/dataService';
 
 // 爽やかな青のカラーパレット
 const COLORS = {
@@ -26,29 +28,61 @@ const COLORS = {
 };
 
 export default function LocalInfoScreen() {
-  const currentDate = new Date();
-  const formattedDate = `${currentDate.getMonth() + 1}/${currentDate.getDate()}(${getDayOfWeek(currentDate)})`;
+  const [loading, setLoading] = useState(true);
+  const [localInfoData, setLocalInfoData] = useState(null);
+  const [formattedDate, setFormattedDate] = useState('');
   
-  // 曜日を取得する関数
-  function getDayOfWeek(date) {
-    const days = ['日', '月', '火', '水', '木', '金', '土'];
-    return days[date.getDay()];
-  }
+  // 地域情報データを取得
+  useEffect(() => {
+    async function fetchData() {
+      setLoading(true);
+      try {
+        const data = await localInfoDataService.getLocalInfoData();
+        setLocalInfoData(data);
+        
+        // 現在の日付をフォーマット
+        const currentDate = new Date();
+        setFormattedDate(dateUtils.getFormattedDate(currentDate));
+      } catch (error) {
+        console.error('Error fetching local info data:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    fetchData();
+  }, []);
   
   // 電話をかける処理
   const handlePhoneCall = () => {
-    Linking.openURL('tel:+81000000000');
+    if (localInfoData && localInfoData.contactInfo) {
+      Linking.openURL(`tel:${localInfoData.contactInfo.phone}`);
+    }
   };
   
   // メールを送る処理
   const handleEmail = () => {
-    Linking.openURL('mailto:contact@example.com');
+    if (localInfoData && localInfoData.contactInfo) {
+      Linking.openURL(`mailto:${localInfoData.contactInfo.email}`);
+    }
   };
   
   // ウェブサイトを開く処理
   const handleWebsite = () => {
-    Linking.openURL('https://www.city.minato.tokyo.jp/');
+    if (localInfoData && localInfoData.contactInfo) {
+      Linking.openURL(localInfoData.contactInfo.website);
+    }
   };
+
+  // ローディング中の表示
+  if (loading || !localInfoData) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+        <Text style={styles.loadingText}>地域情報を読み込んでいます...</Text>
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -69,8 +103,8 @@ export default function LocalInfoScreen() {
       <View style={styles.dateWeatherContainer}>
         <Text style={styles.dateText}>{formattedDate}</Text>
         <View style={styles.weatherInfo}>
-          <Ionicons name="sunny" size={18} color="#ffffff" />
-          <Text style={styles.tempText}>35/25°C</Text>
+          <Ionicons name={localInfoData.weather.icon} size={18} color="#ffffff" />
+          <Text style={styles.tempText}>{localInfoData.weather.temp}</Text>
         </View>
       </View>
       
@@ -81,9 +115,11 @@ export default function LocalInfoScreen() {
         </View>
         
         <View style={styles.infoItem}>
-          <Text style={styles.infoItemTitle}>①まちづくり協議会・商店会</Text>
-          <Text style={styles.infoItemDetail}>②港区まつり2024開催のお知らせ</Text>
-          <Text style={styles.infoItemDetail}>③芝浦運河まつり実行委員会</Text>
+          {localInfoData.localInfoItems.map((item, index) => (
+            <Text key={index} style={index === 0 ? styles.infoItemTitle : styles.infoItemDetail}>
+              {item.title}
+            </Text>
+          ))}
         </View>
         
         {/* お問い合わせセクション */}
@@ -108,32 +144,27 @@ export default function LocalInfoScreen() {
         </View>
         
         <View style={styles.districtSection}>
-          <Text style={styles.districtText}>広報みなとの発行</Text>
+          <Text style={styles.districtText}>{localInfoData.districtInfo.title}</Text>
         </View>
         
         {/* SNSアカウント */}
         <View style={styles.snsSection}>
-          <View style={styles.snsAccount}>
-            <View style={styles.snsIconContainer}>
-              <FontAwesome5 name="user-circle" size={36} color={COLORS.darkGrey} />
+          {localInfoData.snsAccounts.map((account, index) => (
+            <View key={index} style={styles.snsAccount}>
+              <View style={styles.snsIconContainer}>
+                <FontAwesome5 name={account.icon} size={36} color={account.iconColor} />
+              </View>
+              <View style={styles.snsInfo}>
+                <Text style={styles.snsName}>{account.name}</Text>
+                {account.handle && <Text style={styles.snsHandle}>{account.handle}</Text>}
+                {!account.handle && (
+                  <TouchableOpacity style={styles.followButton}>
+                    <Text style={styles.followButtonText}>フォロー</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
             </View>
-            <View style={styles.snsInfo}>
-              <Text style={styles.snsName}>港区区長情報・観光情報</Text>
-              <TouchableOpacity style={styles.followButton}>
-                <Text style={styles.followButtonText}>フォロー</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-          
-          <View style={styles.snsAccount}>
-            <View style={styles.snsIconContainer}>
-              <FontAwesome5 name="twitter" size={36} color="#1DA1F2" />
-            </View>
-            <View style={styles.snsInfo}>
-              <Text style={styles.snsName}>港区防災情報</Text>
-              <Text style={styles.snsHandle}>@minato_city</Text>
-            </View>
-          </View>
+          ))}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -144,6 +175,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.background,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: COLORS.text,
   },
   dateWeatherContainer: {
     flexDirection: 'row',

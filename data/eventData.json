@@ -1,0 +1,61 @@
+{
+    "currentDate": {
+      "month": 7,
+      "date": 26,
+      "dayOfWeek": "金"
+    },
+    "weather": {
+      "icon": "sunny",
+      "temp": "35/25°C"
+    },
+    "eventSections": [
+      {
+        "id": "1",
+        "title": "①17～21時 シーバンス夏祭り",
+        "events": [
+          {
+            "id": "101",
+            "title": "@シーバンス アモール",
+            "time": "17:45-18:30",
+            "type": "performance"
+          },
+          {
+            "id": "102",
+            "title": "キッズショー",
+            "time": "19:00-19:30",
+            "type": "performance"
+          },
+          {
+            "id": "103",
+            "title": "サンバ",
+            "time": "19:45-20:15",
+            "type": "performance"
+          },
+          {
+            "id": "104",
+            "title": "ボンダンスショー",
+            "time": "19:45-20:15",
+            "type": "performance"
+          }
+        ]
+      },
+      {
+        "id": "2",
+        "title": "②17～20時 地蔵尊盆踊り大会",
+        "events": [
+          {
+            "id": "201",
+            "title": "地蔵尊法要",
+            "time": "17:30-18:00",
+            "type": "traditional"
+          },
+          {
+            "id": "202",
+            "title": "盆踊り",
+            "time": "18:00-21:00",
+            "type": "traditional"
+          }
+        ]
+      }
+    ]
+  }

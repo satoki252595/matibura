@@ -1,0 +1,47 @@
+{
+    "currentDate": {
+      "month": 7,
+      "date": 26,
+      "dayOfWeek": "金"
+    },
+    "weather": {
+      "icon": "sunny",
+      "temp": "35/25°C"
+    },
+    "localInfoItems": [
+      {
+        "title": "①まちづくり協議会・商店会",
+        "details": []
+      },
+      {
+        "title": "②港区まつり2024開催のお知らせ",
+        "details": []
+      },
+      {
+        "title": "③芝浦運河まつり実行委員会",
+        "details": []
+      }
+    ],
+    "contactInfo": {
+      "email": "contact@example.com",
+      "phone": "+81000000000",
+      "website": "https://www.city.minato.tokyo.jp/"
+    },
+    "districtInfo": {
+      "title": "広報みなとの発行"
+    },
+    "snsAccounts": [
+      {
+        "name": "港区区長情報・観光情報",
+        "icon": "user-circle",
+        "iconColor": "#57606f",
+        "handle": null
+      },
+      {
+        "name": "港区防災情報",
+        "icon": "twitter",
+        "iconColor": "#1DA1F2",
+        "handle": "@minato_city"
+      }
+    ]
+  }

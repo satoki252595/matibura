@@ -13,7 +13,7 @@ import { Stack, useLocalSearchParams } from 'expo-router';
 import CrowdIndicator from '../../components/CrowdIndicator';
 import { CrowdLineChart, CrowdBarChart } from '../../components/CrowdChart';
 import { HourlyTrendData, DailyComparisonData, CrowdData } from '../../types/crowd';
-import { crowdDataService } from '../../data/crowdData';
+import { crowdDataService } from '../../services/dataService';
 
 // 爽やかな青のカラーパレット
 const COLORS = {
@@ -38,14 +38,18 @@ export default function CrowdMonitorScreen() {
   const [fadeAnim] = useState(new Animated.Value(1));
   const [loading, setLoading] = useState(true);
   const [eventData, setEventData] = useState<CrowdData | null>(null);
+  const [hourlyTrendData, setHourlyTrendData] = useState<HourlyTrendData[]>([]);
+  const [dailyComparisonData, setDailyComparisonData] = useState<DailyComparisonData[]>([]);
   
   // イベントデータを取得
   useEffect(() => {
-    async function fetchEventData() {
+    async function fetchData() {
       setLoading(true);
       try {
         // APIサービスからデータを非同期で取得
         const data = await crowdDataService.getEventData(eventId as string);
+        const hourlyData = await crowdDataService.getHourlyTrendData();
+        const dailyData = await crowdDataService.getDailyComparisonData();
         
         // タイトルが渡された場合はイベント名を上書き
         if (eventTitle) {
@@ -53,6 +57,8 @@ export default function CrowdMonitorScreen() {
         }
         
         setEventData(data);
+        setHourlyTrendData(hourlyData);
+        setDailyComparisonData(dailyData);
       } catch (error) {
         console.error('Error fetching event data:', error);
       } finally {
@@ -60,7 +66,7 @@ export default function CrowdMonitorScreen() {
       }
     }
     
-    fetchEventData();
+    fetchData();
   }, [eventId, eventTitle]);
   
   // タブ切り替え時のアニメーション
@@ -80,27 +86,6 @@ export default function CrowdMonitorScreen() {
     
     setActiveTab(tab);
   };
-
-  // 時間推移グラフのデータ
-  const hourlyTrendData: HourlyTrendData[] = [
-    { hour: '15時', average: 20, predicted: 15 },
-    { hour: '16時', average: 25, predicted: 25 },
-    { hour: '17時', average: 15, predicted: 50 },
-    { hour: '18時', average: 20, predicted: 75 },
-    { hour: '19時', average: 45, predicted: 100 },
-    { hour: '20時', average: 80, predicted: 50 },
-    { hour: '21時', average: 60, predicted: 30 },
-    { hour: '22時', average: 40, predicted: 20 },
-  ];
-
-  // 日別比較グラフのデータ
-  const dailyComparisonData: DailyComparisonData[] = [
-    { name: '17時', today: 50, yesterday: 15, lastWeek: 25 },
-    { name: '18時', today: 75, yesterday: 20, lastWeek: 30 },
-    { name: '19時', today: 100, yesterday: 35, lastWeek: 45 },
-    { name: '20時', today: 50, yesterday: 70, lastWeek: 80 },
-    { name: '21時', today: 30, yesterday: 55, lastWeek: 60 },
-  ];
 
   // ローディング中の表示
   if (loading || !eventData) {

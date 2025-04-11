@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, ActivityIndicator } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
+import { homeDataService, dateUtils } from '../../services/dataService';
 
 // 爽やかな青のカラーパレット
 const COLORS = {
@@ -24,50 +25,39 @@ const EventType = {
   DISASTER: '防災'
 };
 
-// モックデータ
-const eventsData = [
-  {
-    id: '1',
-    type: EventType.EVENT,
-    title: 'シーバンス夏祭り',
-    time: '17:00 ~ 21:00',
-    location: 'シーバンスアモール',
-    date: '2024-07-26'
-  },
-  {
-    id: '2',
-    type: EventType.EVENT,
-    title: '地蔵尊盆踊り大会',
-    time: '17:00 ~ 20:00',
-    location: '増上寺',
-    date: '2024-07-26'
-  },
-  {
-    id: '3',
-    type: EventType.NEARBY,
-    title: 'Hi-NODE BLUE SUMMER FES 2024',
-    time: '開催!',
-    location: '',
-    date: '2024-08-02'
-  }
-];
-
 export default function HomeScreen() {
   const router = useRouter();
   const [activeFilter, setActiveFilter] = useState('all');
-  const currentDate = new Date();
-  const formattedDate = `${currentDate.getMonth() + 1}/${currentDate.getDate()}(${getDayOfWeek(currentDate)})`;
+  const [loading, setLoading] = useState(true);
+  const [homeData, setHomeData] = useState(null);
+  const [formattedDate, setFormattedDate] = useState('');
   
-  // 曜日を取得する関数
-  function getDayOfWeek(date) {
-    const days = ['日', '月', '火', '水', '木', '金', '土'];
-    return days[date.getDay()];
-  }
+  // ホームデータを取得
+  useEffect(() => {
+    async function fetchData() {
+      setLoading(true);
+      try {
+        const data = await homeDataService.getHomeData();
+        setHomeData(data);
+        
+        // 現在の日付をフォーマット
+        const currentDate = new Date();
+        setFormattedDate(dateUtils.getFormattedDate(currentDate));
+      } catch (error) {
+        console.error('Error fetching home data:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    fetchData();
+  }, []);
   
   // イベントタイプでフィルタリングする関数
   const getFilteredEvents = () => {
-    if (activeFilter === 'all') return eventsData;
-    return eventsData.filter(event => event.type === activeFilter);
+    if (!homeData) return [];
+    if (activeFilter === 'all') return homeData.events;
+    return homeData.events.filter(event => event.type === activeFilter);
   };
   
   // イベントカードをタップした時の処理
@@ -81,6 +71,16 @@ export default function HomeScreen() {
       }
     });
   };
+
+  // ローディング中の表示
+  if (loading || !homeData) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+        <Text style={styles.loadingText}>データを読み込んでいます...</Text>
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -101,8 +101,8 @@ export default function HomeScreen() {
       <View style={styles.dateWeatherContainer}>
         <Text style={styles.dateText}>{formattedDate}</Text>
         <View style={styles.weatherInfo}>
-          <FontAwesome5 name="sun" size={18} color="#ffffff" />
-          <Text style={styles.tempText}>35/25°C</Text>
+          <FontAwesome5 name={homeData.weather.icon} size={18} color="#ffffff" />
+          <Text style={styles.tempText}>{homeData.weather.temp}</Text>
         </View>
       </View>
       
@@ -209,6 +209,17 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.background,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: COLORS.text,
+  },
   dateWeatherContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -258,7 +269,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   eventListContainer: {
-
     padding: 16,
   },
   eventCard: {

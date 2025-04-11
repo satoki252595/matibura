@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -6,10 +6,12 @@ import {
   TouchableOpacity, 
   ScrollView, 
   SafeAreaView,
-  Linking
+  Linking,
+  ActivityIndicator
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
+import { eventDataService, dateUtils } from '../../services/dataService';
 
 // 爽やかな青のカラーパレット
 const COLORS = {
@@ -45,14 +47,30 @@ interface EventSection {
 
 export default function EventTourismScreen() {
   const router = useRouter();
-  const currentDate = new Date();
-  const formattedDate = `${currentDate.getMonth() + 1}/${currentDate.getDate()}(${getDayOfWeek(currentDate)})`;
+  const [loading, setLoading] = useState(true);
+  const [eventData, setEventData] = useState(null);
+  const [formattedDate, setFormattedDate] = useState('');
   
-  // 曜日を取得する関数
-  function getDayOfWeek(date) {
-    const days = ['日', '月', '火', '水', '木', '金', '土'];
-    return days[date.getDay()];
-  }
+  // イベントデータを取得
+  useEffect(() => {
+    async function fetchData() {
+      setLoading(true);
+      try {
+        const data = await eventDataService.getEventData();
+        setEventData(data);
+        
+        // 現在の日付をフォーマット
+        const currentDate = new Date();
+        setFormattedDate(dateUtils.getFormattedDate(currentDate));
+      } catch (error) {
+        console.error('Error fetching event data:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    fetchData();
+  }, []);
   
   // ウェブサイトを開く処理
   const handleWebsite = () => {
@@ -70,57 +88,15 @@ export default function EventTourismScreen() {
     });
   };
 
-  // イベントデータ
-  const eventSections: EventSection[] = [
-    {
-      id: '1',
-      title: '①17～21時 シーバンス夏祭り',
-      events: [
-        {
-          id: '101',
-          title: '@シーバンス アモール',
-          time: '17:45-18:30',
-          type: 'performance',
-        },
-        {
-          id: '102',
-          title: 'キッズショー',
-          time: '19:00-19:30',
-          type: 'performance',
-        },
-        {
-          id: '103',
-          title: 'サンバ',
-          time: '19:45-20:15',
-          type: 'performance',
-        },
-        {
-          id: '104',
-          title: 'ボンダンスショー',
-          time: '19:45-20:15',
-          type: 'performance',
-        }
-      ]
-    },
-    {
-      id: '2',
-      title: '②17～20時 地蔵尊盆踊り大会',
-      events: [
-        {
-          id: '201',
-          title: '地蔵尊法要',
-          time: '17:30-18:00',
-          type: 'traditional',
-        },
-        {
-          id: '202',
-          title: '盆踊り',
-          time: '18:00-21:00',
-          type: 'traditional',
-        }
-      ]
-    }
-  ];
+  // ローディング中の表示
+  if (loading || !eventData) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+        <Text style={styles.loadingText}>イベントデータを読み込んでいます...</Text>
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -141,8 +117,8 @@ export default function EventTourismScreen() {
       <View style={styles.dateWeatherContainer}>
         <Text style={styles.dateText}>{formattedDate}</Text>
         <View style={styles.weatherInfo}>
-          <Ionicons name="sunny" size={18} color="#ffffff" />
-          <Text style={styles.tempText}>35/25°C</Text>
+          <Ionicons name={eventData.weather.icon} size={18} color="#ffffff" />
+          <Text style={styles.tempText}>{eventData.weather.temp}</Text>
         </View>
       </View>
       
@@ -152,7 +128,7 @@ export default function EventTourismScreen() {
           <Text style={styles.sectionHeaderText}>イベント・観光情報</Text>
         </View>
         
-        {eventSections.map((section) => (
+        {eventData.eventSections.map((section) => (
           <View key={section.id} style={styles.eventSection}>
             <Text style={styles.eventSectionTitle}>{section.title}</Text>
             
@@ -190,6 +166,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.background,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: COLORS.text,
   },
   dateWeatherContainer: {
     flexDirection: 'row',
