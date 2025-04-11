@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "MyExpoApp",
-    "slug": "MyExpoApp",
+    "name": "街ぶら",
+    "slug": "街ぶら",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -17,7 +17,7 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.satoki252595.MyExpoApp"
+      "package": "com.satoki252595.machiblapp"
     },
     "web": {
       "bundler": "metro",

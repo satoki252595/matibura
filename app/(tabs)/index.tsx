@@ -86,7 +86,7 @@ export default function HomeScreen() {
     <SafeAreaView style={styles.container}>
       <Stack.Screen 
         options={{
-          title: 'マティブラ',
+          title: '街ぶら',
           headerStyle: {
             backgroundColor: COLORS.primary,
           },
@@ -239,9 +239,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   filterButton: {
-    paddingHorizontal: 14,
+    height: 35,
+    paddingHorizontal: 10,
     paddingVertical: 8,
-    marginHorizontal: 4,
+    marginHorizontal: 2,
     borderRadius: 20,
     backgroundColor: '#f0f0f0',
   },
@@ -257,7 +258,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   eventListContainer: {
-    flex: 1,
+
     padding: 16,
   },
   eventCard: {

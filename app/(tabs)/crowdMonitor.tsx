@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -6,12 +6,14 @@ import {
   TouchableOpacity, 
   ScrollView,
   Animated,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import CrowdIndicator from '../../components/CrowdIndicator';
 import { CrowdLineChart, CrowdBarChart } from '../../components/CrowdChart';
-import { HourlyTrendData, DailyComparisonData } from '../../types/crowd';
+import { HourlyTrendData, DailyComparisonData, CrowdData } from '../../types/crowd';
+import { crowdDataService } from '../../data/crowdData';
 
 // 爽やかな青のカラーパレット
 const COLORS = {
@@ -28,124 +30,38 @@ const COLORS = {
   tabInactive: '#ffffff',
 };
 
-// イベントデータマッピング
-const eventDataMap = {
-  '1': { // シーバンス夏祭り
-    date: '7/26(金)',
-    weather: {
-      icon: 'sunny',
-      temp: '35/25°C',
-    },
-    event: {
-      time: '17:00〜21:00',
-      name: 'シーバンス夏祭り',
-      number: 1,
-    },
-    crowdness: {
-      percentage: '125%',
-      label: '平常比',
-    },
-    hourlyPrediction: [
-      { hour: '16時', crowd: [true, false, false, false], value: 25 },
-      { hour: '17時', crowd: [true, true, false, false], value: 50 },
-      { hour: '18時', crowd: [true, true, true, false], value: 75 },
-      { hour: '19時', crowd: [true, true, true, true], value: 100 },
-      { hour: '20時', crowd: [true, true, true, false], value: 75 },
-    ],
-    restaurantAdvice: 'シフトを増やして対応！',
-    customerAdvice: '18時以降は混雑します',
-    storeName: 'シーバンス周辺店舗',
-  },
-  '2': { // 地蔵尊盆踊り大会
-    date: '7/26(金)',
-    weather: {
-      icon: 'sunny',
-      temp: '35/25°C',
-    },
-    event: {
-      time: '17:00〜20:00',
-      name: '地蔵尊盆踊り大会',
-      number: 1,
-    },
-    crowdness: {
-      percentage: '140%',
-      label: '平常比',
-    },
-    hourlyPrediction: [
-      { hour: '16時', crowd: [true, false, false, false], value: 25 },
-      { hour: '17時', crowd: [true, true, false, false], value: 50 },
-      { hour: '18時', crowd: [true, true, true, true], value: 100 },
-      { hour: '19時', crowd: [true, true, true, false], value: 75 },
-      { hour: '20時', crowd: [true, false, false, false], value: 25 },
-    ],
-    restaurantAdvice: '18時台に準備を！',
-    customerAdvice: '19時以降がおすすめ',
-    storeName: '増上寺周辺店舗',
-  },
-  '3': { // Hi-NODE
-    date: '8/2(金)',
-    weather: {
-      icon: 'partly-sunny',
-      temp: '32/24°C',
-    },
-    event: {
-      time: '終日',
-      name: 'Hi-NODE BLUE SUMMER FES',
-      number: 1,
-    },
-    crowdness: {
-      percentage: '180%',
-      label: '平常比',
-    },
-    hourlyPrediction: [
-      { hour: '10時', crowd: [true, false, false, false], value: 25 },
-      { hour: '12時', crowd: [true, true, false, false], value: 50 },
-      { hour: '14時', crowd: [true, true, true, false], value: 75 },
-      { hour: '16時', crowd: [true, true, true, true], value: 100 },
-      { hour: '18時', crowd: [true, true, true, false], value: 75 },
-    ],
-    restaurantAdvice: '終日の混雑に備えて！',
-    customerAdvice: '10時台が比較的空いています',
-    storeName: 'Hi-NODE周辺店舗',
-  }
-};
-
 export default function CrowdMonitorScreen() {
   const params = useLocalSearchParams();
   const { eventId, eventTitle } = params;
   
   const [activeTab, setActiveTab] = useState('overview');
   const [fadeAnim] = useState(new Animated.Value(1));
+  const [loading, setLoading] = useState(true);
+  const [eventData, setEventData] = useState<CrowdData | null>(null);
   
-  // イベントIDからデータを取得
-  const eventData = eventId && eventDataMap[eventId as string] 
-    ? eventDataMap[eventId as string] 
-    : {
-        date: '7/19(金)',
-        weather: {
-          icon: 'sunny',
-          temp: '35/25°C',
-        },
-        event: {
-          time: '終日',
-          name: eventTitle as string || 'イベント',
-          number: 1,
-        },
-        crowdness: {
-          percentage: '150%',
-          label: '平常比',
-        },
-        hourlyPrediction: [
-          { hour: '16時', crowd: [true, false, false, false], value: 25 },
-          { hour: '17時', crowd: [true, true, false, false], value: 50 },
-          { hour: '18時', crowd: [true, true, true, false], value: 75 },
-          { hour: '19時', crowd: [true, true, true, true], value: 100 },
-          { hour: '20時', crowd: [true, true, false, false], value: 50 },
-        ],
-        restaurantAdvice: 'シフトの調整をおすすめします',
-        customerAdvice: '17時台がおすすめです',
-        storeName: '周辺店舗',
-      };
+  // イベントデータを取得
+  useEffect(() => {
+    async function fetchEventData() {
+      setLoading(true);
+      try {
+        // APIサービスからデータを非同期で取得
+        const data = await crowdDataService.getEventData(eventId as string);
+        
+        // タイトルが渡された場合はイベント名を上書き
+        if (eventTitle) {
+          data.event.name = eventTitle as string;
+        }
+        
+        setEventData(data);
+      } catch (error) {
+        console.error('Error fetching event data:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    fetchEventData();
+  }, [eventId, eventTitle]);
   
   // タブ切り替え時のアニメーション
   const changeTab = (tab: string) => {
@@ -185,6 +101,16 @@ export default function CrowdMonitorScreen() {
     { name: '20時', today: 50, yesterday: 70, lastWeek: 80 },
     { name: '21時', today: 30, yesterday: 55, lastWeek: 60 },
   ];
+
+  // ローディング中の表示
+  if (loading || !eventData) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+        <Text style={styles.loadingText}>混雑データを読み込んでいます...</Text>
+      </View>
+    );
+  }
 
   return (
     <>
@@ -397,6 +323,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.background,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: COLORS.text,
   },
   dateWeatherContainer: {
     flexDirection: 'row',
