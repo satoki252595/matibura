@@ -74,6 +74,42 @@ function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="localInfo"
+        options={{
+          title: '地域情報',
+          tabBarIcon: ({ color, size }) => (
+            <FontAwesome name="map-marker" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="eventTourism"
+        options={{
+          title: 'イベント',
+          tabBarIcon: ({ color, size }) => (
+            <FontAwesome name="calendar" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="eventCalendar"
+        options={{
+          title: 'カレンダー',
+          tabBarIcon: ({ color, size }) => (
+            <FontAwesome name="calendar-check-o" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="disasterInfo"
+        options={{
+          title: '防災',
+          tabBarIcon: ({ color, size }) => (
+            <FontAwesome name="warning" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="crowdMonitor"
         options={{
           title: '混雑予測',
